@@ -44,3 +44,4 @@ docs/_build
 
 # Project files
 !/imi/bin
+imi/bin/*/*.py[cod]

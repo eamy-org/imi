@@ -1,12 +1,15 @@
 # Config file for automatic testing at travis-ci.org
 
 language: python
-
-python:
-  - "3.4"
-
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-# install: pip install -r requirements.txt --use-mirrors
-
-# command to run tests, e.g. python setup.py test
-script: python setup.py test
+evn:
+    global:
+        PYTHONUNBUFFERED=yes
+before_install:
+  - |
+    python --version
+    uname -a
+    lsb_release -a
+install:
+  - pip install tox
+script:
+  - tox -v -- -v
