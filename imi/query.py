@@ -88,7 +88,8 @@ def match(document, query):
             elif isinstance(doc_val, (list, tuple)):
                 is_match = (search in doc_val or search == doc_val)
             else:
-                is_none = search is None and doc_val is NOTHING
+                none_search = search is None or search is {'$exists:': False}
+                is_none = none_search and doc_val is NOTHING
                 is_match = doc_val == search or is_none
             if is_match:
                 break
@@ -149,7 +150,7 @@ def iter_key_candidates_sublist(document, key):
             if isinstance(sub_doc, dict) and sub_key in sub_doc:
                 val = iter_key_candidates(sub_doc[sub_key], key_remainder)
                 res.append(val)
-        return res
+        return res or (NOTHING,)
     else:
         if sub_key_int >= len(document):
             return ()

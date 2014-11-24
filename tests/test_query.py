@@ -6,7 +6,7 @@ import unittest
 from imi.query import match
 
 
-class TestFilter(unittest.TestCase):
+class TestQuery(unittest.TestCase):
 
     def setUp(self):
         self.document = {
@@ -20,6 +20,12 @@ class TestFilter(unittest.TestCase):
     def test_match_one_field(self):
         trueQuery = {'a': 'b'}
         falseQuery = {'a': 'a'}
+        self.assertTrue(match(self.document, trueQuery))
+        self.assertFalse(match(self.document, falseQuery))
+
+    def test_match_none_field(self):
+        trueQuery = {'z': None}
+        falseQuery = {'a': None}
         self.assertTrue(match(self.document, trueQuery))
         self.assertFalse(match(self.document, falseQuery))
 
@@ -141,12 +147,10 @@ class TestFilter(unittest.TestCase):
 
     def test_match_op_exists(self):
         trueQuery1 = {'n.o': {'$exists': True}}
-        # trueQuery2 = {'n.n': {'$exists': False}}
+        trueQuery2 = {'n.n': {'$exists': False}}
         falseQuery = {'a': {'$exists': False}}
         self.assertTrue(match(self.document, trueQuery1))
-
-        # TODO: Fix it
-        # self.assertTrue(match(self.document, trueQuery2))
+        self.assertTrue(match(self.document, trueQuery2))
         self.assertFalse(match(self.document, falseQuery))
 
     def test_match_op_regex(self):
