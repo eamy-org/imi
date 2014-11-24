@@ -36,11 +36,11 @@ $type - TODO: Selects documents if a field is of the specified type.
 
 Evaluation
 ----------
-$mod - Performs a modulo operation on the value of a field
+$mod - TODO: Performs a modulo operation on the value of a field
        and selects documents with a specified result.
 $regex - Selects documents where values match a specified regular expression.
-$text - Performs text search.
-$where - Matches documents that satisfy a JavaScript expression.
+$text - MISSED: Performs text search.
+$where - MISSED: Matches documents that satisfy a JavaScript expression.
 
 Geospatial
 ----------
