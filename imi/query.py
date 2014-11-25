@@ -75,20 +75,23 @@ def match(document, query):
     in the find() method and other related scenarios (like $elemMatch)
     Inspired by https://github.com/vmalloc/mongomock project
     """
-    if query is None:
+    if query is None or query == {}:
         return True
     for key, search in query.items():
+        if key in LOGICAL_OPERATOR_MAP:
+            if LOGICAL_OPERATOR_MAP[key](document, search):
+                continue
+            else:
+                return False
+        none_search = search is None or search is {'$exists:': False}
         for doc_val in iter_key_candidates(document, key):
             if isinstance(search, dict):
                 is_match = dict_match(document, key, doc_val, search)
             elif isinstance(search, RE_TYPE):
                 is_match = regex(doc_val, search)
-            elif key in LOGICAL_OPERATOR_MAP:
-                is_match = LOGICAL_OPERATOR_MAP[key](document, search)
             elif isinstance(doc_val, (list, tuple)):
                 is_match = (search in doc_val or search == doc_val)
             else:
-                none_search = search is None or search is {'$exists:': False}
                 is_none = none_search and doc_val is NOTHING
                 is_match = doc_val == search or is_none
             if is_match:
@@ -101,6 +104,8 @@ def match(document, query):
 def dict_match(document, key, value, search):
     no_ops = not all(op.startswith('$') for op in search.keys())
     if no_ops:
+        if isinstance(value, (list, tuple)):
+            return any(item == search for item in value)
         return value == search
     for op, arg in search.items():
         is_match = False
@@ -124,6 +129,8 @@ def iter_key_candidates(document, key):
         return (document,)
     if isinstance(document, (list, tuple)):
         return iter_key_candidates_sublist(document, key)
+    if not isinstance(document, dict):
+        return (document,)
     key_parts = key.split('.')
     if len(key_parts) == 1:
         return (document.get(key, NOTHING),)
@@ -149,7 +156,7 @@ def iter_key_candidates_sublist(document, key):
         for sub_doc in document:
             if isinstance(sub_doc, dict) and sub_key in sub_doc:
                 val = iter_key_candidates(sub_doc[sub_key], key_remainder)
-                res.append(val)
+                res.extend(val)
         return res or (NOTHING,)
     else:
         if sub_key_int >= len(document):
@@ -179,7 +186,7 @@ def not_nothing_and(func):
 
 
 def elem_match_op(document, query):
-    if not isinstance(document, list):
+    if not isinstance(document, (list, tuple)):
         return False
     return any(match(item, query) for item in document)
 

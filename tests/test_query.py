@@ -91,6 +91,16 @@ class TestQuery(unittest.TestCase):
         self.assertFalse(match(self.document, falseQuery1))
         self.assertFalse(match(self.document, falseQuery2))
 
+    def test_match_dict_on_list(self):
+        trueQuery1 = {'n.o': {'$gt': 'o'}}
+        trueQuery2 = {'n': {'o': 'p'}}
+        falseQuery1 = {'n.o': {'$lt': 'o'}}
+        falseQuery2 = {'n': {'o': 'o'}}
+        self.assertTrue(match(self.document, trueQuery1))
+        self.assertTrue(match(self.document, trueQuery2))
+        self.assertFalse(match(self.document, falseQuery1))
+        self.assertFalse(match(self.document, falseQuery2))
+
     def test_match_op_ne(self):
         trueQuery = {'a': {'$ne': 'a'}}
         falseQuery = {'a': {'$ne': 'b'}}
@@ -159,7 +169,7 @@ class TestQuery(unittest.TestCase):
         self.assertTrue(match(self.document, trueQuery))
         self.assertFalse(match(self.document, falseQuery))
 
-    def test_match_op_elemMatch(self):
+    def test_match_op_elemMatch_object(self):
         trueQuery1 = {'n': {'$elemMatch': {}}}
         trueQuery2 = {'n': {'$elemMatch': {'o': 'p'}}}
         trueQuery3 = {'n': {'$elemMatch': {'o': {'$lt': 'q'}}}}
@@ -168,6 +178,16 @@ class TestQuery(unittest.TestCase):
         self.assertTrue(match(self.document, trueQuery1))
         self.assertTrue(match(self.document, trueQuery2))
         self.assertTrue(match(self.document, trueQuery3))
+        self.assertFalse(match(self.document, falseQuery1))
+        self.assertFalse(match(self.document, falseQuery2))
+
+    def test_match_op_elemMatch_simple(self):
+        trueQuery1 = {'c': {'$elemMatch': {}}}
+        trueQuery2 = {'c': {'$elemMatch': {'$lt': 'e'}}}
+        falseQuery1 = {'a': {'$elemMatch': {}}}
+        falseQuery2 = {'c': {'$elemMatch': {'$lt': 'c'}}}
+        self.assertTrue(match(self.document, trueQuery1))
+        self.assertTrue(match(self.document, trueQuery2))
         self.assertFalse(match(self.document, falseQuery1))
         self.assertFalse(match(self.document, falseQuery2))
 
