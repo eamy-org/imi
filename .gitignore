@@ -47,3 +47,6 @@ docs/_build
 imi/bin/*/*.py[cod]
 !/tests/bin
 tests/bin/*/*.py[cod]
+
+# OS Files
+.DS_Store
