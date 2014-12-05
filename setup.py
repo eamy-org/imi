@@ -1,8 +1,14 @@
 #!/usr/bin/env python
+import os
 from setuptools import setup
 
 readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
+
+
+def strip_comments(l):
+    return l.split('#', 1)[0].strip()
+
 
 def reqs(*f):
     return [
