@@ -4,10 +4,14 @@ from setuptools import setup
 readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
-requirements = [
-    # TODO: put package requirements here
-]
+def reqs(*f):
+    return [
+        r for r in (
+            strip_comments(l) for l in open(
+                os.path.join(os.getcwd(), 'requirements', *f)).readlines()
+        ) if r]
 
+requirements = reqs('default.txt')
 test_requirements = [
     # TODO: put package test requirements here
 ]
