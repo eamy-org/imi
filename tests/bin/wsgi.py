@@ -3,9 +3,6 @@
 import unittest
 from unittest.mock import patch, sentinel, Mock
 
-from imi.bin import imi
-from imi.config import WEB_HOST, WEB_PORT
-
 __all__ = ['TestWsgi']
 
 
