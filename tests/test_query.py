@@ -5,6 +5,8 @@ import unittest
 
 from imi.query import match
 
+__all__ = ['TestQuery']
+
 
 class TestQuery(unittest.TestCase):
 

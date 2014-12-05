@@ -2,8 +2,8 @@ __all__ = ['main']
 
 
 def main():
-    from imi.bin.imi import main
-    main()
+    from .bin.imi import main as entry
+    entry()
 
 
 if __name__ == '__main__':  # pragma: no cover

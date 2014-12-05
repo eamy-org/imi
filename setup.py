@@ -1,8 +1,5 @@
 #!/usr/bin/env python
-
-
 from setuptools import setup
-
 
 readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
@@ -19,6 +16,7 @@ entrypoints = {}
 
 console_scripts = entrypoints['console_scripts'] = [
     'imi = imi.__main__:main',
+    'imi-server = imi.__main__:server',
 ]
 
 setup(
