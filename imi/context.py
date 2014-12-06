@@ -112,6 +112,4 @@ class ContextAgent:
     def init_context(self, rule, idx):
         nodes = deepcopy(rule.nodes)
         nodes[0].state = NodeState.current
-        ctx = Context(rule.name, idx, nodes)
-        self.database.store(ctx)
         return Context(rule.name, idx, nodes)
