@@ -14,3 +14,5 @@ install:
   - pip install tox
 script:
   - tox -v -- -v
+after_success:
+  - coveralls
