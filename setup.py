@@ -18,9 +18,7 @@ def reqs(*f):
         ) if r]
 
 requirements = reqs('default.txt')
-test_requirements = [
-    # TODO: put package test requirements here
-]
+test_requirements = reqs('tests.txt')
 
 entrypoints = {}
 
