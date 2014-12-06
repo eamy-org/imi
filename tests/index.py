@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import unittest
-from unittest.mock import patch, Mock
 
 from imi import index
 
@@ -18,34 +17,39 @@ class TestIndex(unittest.TestCase):
         }
 
     def test_extract_field(self):
-        idx = {'a': 1}
+        idx = ('a',)
         res = index.extract(self.document, idx)
-        self.assertEqual('b', res['a'])
+        self.assertTrue(('a', 'b') in res)
 
     def test_extract_no_field(self):
-        idx = {'z': 1}
+        idx = ('z',)
         res = index.extract(self.document, idx)
-        self.assertIsNone(res['z'])
+        self.assertTrue(('z', None) in res)
 
     def test_extract_sub_field(self):
-        idx = {'k.l': 1}
+        idx = ('k.l',)
         res = index.extract(self.document, idx)
-        self.assertEqual('m', res['k.l'])
+        self.assertTrue(('k.l', 'm') in res)
 
     def test_extract_sub_field_no_path(self):
-        idx = {'k.l.z': 1}
+        idx = ('k.l.z',)
         res = index.extract(self.document, idx)
-        self.assertIsNone(res['k.l.z'])
+        self.assertTrue(('k.l.z', None) in res)
 
     def test_extract_array(self):
-        idx = {'g': 1}
-        res = index.extract(self.document, idx)
-        self.assertEqual(['h', 'i', 'j'], res['g'])
+        idx = ('g',)
+        with self.assertRaises(TypeError):
+            index.extract(self.document, idx)
+
+    def test_extract_dict(self):
+        idx = ('k',)
+        with self.assertRaises(TypeError):
+            index.extract(self.document, idx)
 
     def test_extract_array_sub_path(self):
-        idx = {'n.o': 1}
+        idx = ('n.o',)
         res = index.extract(self.document, idx)
-        self.assertIsNone(res['n.o'])
+        self.assertTrue(('n.o', None) in res)
 
     def tearDown(self):
         pass
