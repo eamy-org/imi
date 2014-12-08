@@ -32,7 +32,7 @@ def create_context(rule, msg, node_num):
     nodes = deepcopy(rule.nodes)
     nodes[node_num].state = NodeState.current
     idx = extract_index(msg, rule.index)
-    return Context(rule.name, idx, nodes)
+    return Context(None, rule.name, idx, nodes)
 
 
 class TestContextAgent(unittest.TestCase):
@@ -45,11 +45,11 @@ class TestContextAgent(unittest.TestCase):
         def find(*args):
             return self.ctx
 
-        def store(data):
+        def save(data):
             self.ctx = data
 
         self.database.find.side_effect = find
-        self.database.store.side_effect = store
+        self.database.save.side_effect = save
         self.msg = {'a': 'b', 'c': 'd'}
 
     def test_context_init(self):

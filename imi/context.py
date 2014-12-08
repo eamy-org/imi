@@ -12,7 +12,7 @@ class NodeState(Enum):
     initial, current, passed = range(3)
 
 Rule = namedtuple('Rule', ('name', 'criteria', 'index', 'nodes'))
-Context = namedtuple('Context', ('rule_name', 'index', 'nodes'))
+Context = namedtuple('Context', ('id', 'rule_name', 'index', 'nodes'))
 
 
 class Node:
@@ -89,7 +89,7 @@ class ContextAgent:
             rule, idx = self.find_metadata(message)
             ctx = self.get_context(message, rule, idx)
             go_next = invoke_context(message, ctx)
-            self.database.store(ctx)
+            self.database.save(ctx)
 
     def find_metadata(self, message):
         rule = self.find_rule(message)
@@ -112,4 +112,4 @@ class ContextAgent:
     def init_context(self, rule, idx):
         nodes = deepcopy(rule.nodes)
         nodes[0].state = NodeState.current
-        return Context(rule.name, idx, nodes)
+        return Context(None, rule.name, idx, nodes)
