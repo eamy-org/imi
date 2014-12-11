@@ -20,12 +20,7 @@ def reqs(*f):
 requirements = reqs('default.txt')
 test_requirements = reqs('tests.txt')
 
-entrypoints = {}
-
-console_scripts = entrypoints['console_scripts'] = [
-    'imi = imi.__main__:main',
-    'imi-server = imi.__main__:server',
-]
+entrypoints = {'console_scripts': ['imi = imi.__main__:main']}
 
 setup(
     name='imi',

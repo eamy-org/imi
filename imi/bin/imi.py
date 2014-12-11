@@ -1,6 +1,14 @@
 from bottle import run
+from ..daemon import Daemon
 from ..web import init_app
-from ..config import WEB_HOST, WEB_PORT
+from ..config import WEB_HOST, WEB_PORT, PIDFILE
+
+__all__ = ['main']
+
+
+class ImiDaemon(Daemon):
+    def run(self):
+        server()
 
 
 def server():
@@ -8,4 +16,5 @@ def server():
 
 
 def main():
-    server()
+    daemon = ImiDaemon(PIDFILE)
+    daemon.start()
