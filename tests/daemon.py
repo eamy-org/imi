@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import signal
+
 import unittest
 from unittest.mock import patch, call, Mock
 
@@ -21,8 +23,7 @@ class TestDaemon(unittest.TestCase):
 
     @patch('imi.daemon.os')
     @patch('imi.daemon.sys')
-    @patch('imi.daemon.atexit')
-    def test_daemonize(self, atexit, sys, os):
+    def test_daemonize(self, sys, os):
         pid = 12345
         os.fork.side_effect = [0, 0]
         os.getpid.return_value = pid
@@ -35,8 +36,7 @@ class TestDaemon(unittest.TestCase):
 
     @patch('imi.daemon.os')
     @patch('imi.daemon.sys')
-    @patch('imi.daemon.atexit')
-    def test_daemonize_1st_parent_exit(self, atexit, sys, os):
+    def test_daemonize_1st_parent_exit(self, sys, os):
         os.fork.side_effect = [12345, 0]
         sys.exit.side_effect = [SystemExit]
         with self.assertRaises(SystemExit):
@@ -45,8 +45,7 @@ class TestDaemon(unittest.TestCase):
 
     @patch('imi.daemon.os')
     @patch('imi.daemon.sys')
-    @patch('imi.daemon.atexit')
-    def test_daemonize_2nd_parent_exit(self, atexit, sys, os):
+    def test_daemonize_2nd_parent_exit(self, sys, os):
         os.fork.side_effect = [0, 12345]
         sys.exit.side_effect = [SystemExit]
         with self.assertRaises(SystemExit):
@@ -55,8 +54,7 @@ class TestDaemon(unittest.TestCase):
 
     @patch('imi.daemon.os')
     @patch('imi.daemon.sys')
-    @patch('imi.daemon.atexit')
-    def test_daemonize_1st_fork_error(self, atexit, sys, os):
+    def test_daemonize_1st_fork_error(self, sys, os):
         os.fork.side_effect = [OSError, 0]
         sys.exit.side_effect = [SystemExit]
         with self.assertRaises(SystemExit):
@@ -65,16 +63,23 @@ class TestDaemon(unittest.TestCase):
 
     @patch('imi.daemon.os')
     @patch('imi.daemon.sys')
-    @patch('imi.daemon.atexit')
-    def test_daemonize_2nd_fork_error(self, atexit, sys, os):
+    def test_daemonize_2nd_fork_error(self, sys, os):
         os.fork.side_effect = [0, OSError]
         sys.exit.side_effect = [SystemExit]
         with self.assertRaises(SystemExit):
             self.daemon.daemonize()
         sys.exit.assert_called_once_with(1)
 
-    def test_delpid(self):
-        self.daemon.delpid()
+    @patch('imi.daemon.os')
+    @patch('imi.daemon.sys')
+    @patch('imi.daemon.signal')
+    def test_delpid(self, sig, sys, os):
+        os.fork.side_effect = [0, 0]
+        sig.SIG_DFL = signal.SIG_DFL
+        sig.signal.return_value = signal.SIG_DFL
+        self.daemon.daemonize()
+        handler = sig.signal.call_args[0][1]
+        handler(None, None)
         pidfile = self.pathlib.Path.return_value
         pidfile.unlink.assert_called_once_with()
 

@@ -3,7 +3,6 @@
 import sys
 import os
 import time
-import atexit
 import signal
 import pathlib
 
@@ -52,16 +51,14 @@ class Daemon:
         os.dup2(so.fileno(), sys.stdout.fileno())
         os.dup2(se.fileno(), sys.stderr.fileno())
 
-        # Delete pidfile on exit
-        atexit.register(self.delpid)
+        def delpid(signum, frame):
+            self.pidfile.unlink()
+        assert signal.signal(signal.SIGTERM, delpid) == signal.SIG_DFL
 
         # Write pidfile
         pid = str(os.getpid())
         with self.pidfile.open('w+') as stream:  # TODO: maybe set mode to x+?
             print(pid, file=stream)
-
-    def delpid(self):
-        self.pidfile.unlink()
 
     def start(self):
         """Start the daemon."""
