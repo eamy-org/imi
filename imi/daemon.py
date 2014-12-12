@@ -6,6 +6,9 @@ import os
 import time
 import signal
 import pathlib
+import logging
+
+log = logging.getLogger(__name__)
 
 
 class Daemon(metaclass=abc.ABCMeta):
@@ -28,13 +31,13 @@ class Daemon(metaclass=abc.ABCMeta):
 
         if pid:
             message = 'PID file {} already exists. Is daemon already running?'
-            print(message.format(self._pidfile), file=sys.stderr)
+            log.error(message.format(self._pidfile))
             sys.exit(1)
 
         # Start the daemon
         self._daemonize()
         self.run()
-        self.stop()
+        self._finalize()
 
     def stop(self):
         """Stop the daemon."""
@@ -49,7 +52,7 @@ class Daemon(metaclass=abc.ABCMeta):
         # If pidfile doesn't exists than just return from method
         if not pid:
             message = "PID file {} does not exist. Isn't daemon running?"
-            print(message.format(self._pidfile), file=sys.stderr)
+            log.info(message.format(self._pidfile))
             return  # not an error in a restart
 
         # Try killing the daemon process
@@ -81,7 +84,7 @@ class Daemon(metaclass=abc.ABCMeta):
             if pid > 0:  # exit first parent
                 sys.exit(0)
         except OSError as err:
-            print('fork #1 failed: {}'.format(err), file=sys.stderr)
+            log.error('fork #1 failed: {}'.format(err))
             sys.exit(1)
 
         # Decouple from parent environment
@@ -95,26 +98,36 @@ class Daemon(metaclass=abc.ABCMeta):
             if pid > 0:  # exit from second parent
                 sys.exit(0)
         except OSError as err:
-            print('fork #2 failed: {}'.format(err), file=sys.stderr)
+            log.error('fork #2 failed: {}'.format(err))
             sys.exit(1)
 
         # Redirect standard file descriptors
         sys.stdout.flush()
         sys.stderr.flush()
-        si = pathlib.Path(os.devnull).open('r')
-        so = pathlib.Path(os.devnull).open('a+')
-        se = pathlib.Path(os.devnull).open('a+')
+        devnull = pathlib.Path(os.devnull)
+        si = devnull.open('r')
+        so = devnull.open('a+')
+        se = devnull.open('a+')
 
         os.dup2(si.fileno(), sys.stdin.fileno())
         os.dup2(so.fileno(), sys.stdout.fileno())
         os.dup2(se.fileno(), sys.stderr.fileno())
 
         # Delete pidfile in SIGTERM
-        def delpid(signum, frame):
-            self._pidfile.unlink()
-        assert signal.signal(signal.SIGTERM, delpid) == signal.SIG_DFL
+        def handle_term(signum, frame):
+            self._finalize()
+            sys.exit(0)
+
+        assert signal.signal(signal.SIGTERM, handle_term) == signal.SIG_DFL
 
         # Write pidfile
         pid = str(os.getpid())
-        with self._pidfile.open('w+') as stream:  # TODO: maybe set mode to x+?
+        with self._pidfile.open('w+') as stream:
             print(pid, file=stream)
+
+    def _finalize(self):
+        log.info('Finalizing daemon')
+        try:
+            self._pidfile.unlink()
+        except FileNotFoundError:
+            pass

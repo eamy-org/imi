@@ -22,6 +22,9 @@ class TestDaemon(unittest.TestCase):
         self.addCleanup(pathlib_mock.stop)
         self.pathlib = pathlib_mock.start()
         self.daemon = TestDaemonImpl(self.pidfile)
+        log = patch('imi.daemon.log')
+        self.addCleanup(log.stop)
+        log.start()
 
     def test_init(self):
         self.pathlib.Path.assert_called_once_with(self.pidfile)
@@ -78,26 +81,37 @@ class TestDaemon(unittest.TestCase):
     @patch('imi.daemon.os')
     @patch('imi.daemon.sys')
     @patch('imi.daemon.signal')
-    def test_delpid(self, sig, sys, os):
+    def test_sigterm_handler(self, sig, sys, os):
         os.fork.side_effect = [0, 0]
         sig.SIG_DFL = signal.SIG_DFL
         sig.signal.return_value = signal.SIG_DFL
+        self.daemon._finalize = Mock()
         self.daemon._daemonize()
         handler = sig.signal.call_args[0][1]
         handler(None, None)
-        pidfile = self.pathlib.Path.return_value
-        pidfile.unlink.assert_called_once_with()
+        self.daemon._finalize.assert_called_once_with()
 
     def test_start(self):
         open_pid = self.pathlib.Path.return_value.open
         open_pid.side_effect = [FileNotFoundError]
         self.daemon._daemonize = Mock()
         self.daemon.run = Mock()
-        self.daemon.stop = Mock()
+        self.daemon._finalize = Mock()
         self.daemon.start()
         self.daemon._daemonize.assert_called_once_with()
         self.daemon.run.assert_called_once_with()
-        self.daemon.stop.assert_called_once_with()
+        self.daemon._finalize.assert_called_once_with()
+
+    def test_finalize(self):
+        self.daemon._finalize()
+        unlink = self.pathlib.Path.return_value.unlink
+        unlink.assert_called_once_with()
+
+    def test_finalize_pidfile_missed(self):
+        unlink = self.pathlib.Path.return_value.unlink
+        unlink.side_effect = [FileNotFoundError]
+        self.daemon._finalize()
+        unlink.assert_called_once_with()
 
     @patch('imi.daemon.sys')
     def test_start_pidfile_exists(self, sys):
@@ -125,7 +139,7 @@ class TestDaemon(unittest.TestCase):
         open_pid = self.pathlib.Path.return_value.open
         open_pid.side_effect = [FileNotFoundError]
         self.daemon.stop()
-        self.assertTrue(stderr.write.called)
+        # self.assertTrue(stderr.write.called)
 
     def test_restart(self):
         self.daemon.stop = Mock()

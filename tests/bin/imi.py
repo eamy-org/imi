@@ -21,6 +21,9 @@ class TestMainServer(unittest.TestCase):
         deamon = patch('imi.bin.imi.ServerDaemon')
         self.addCleanup(deamon.stop)
         self.deamon = deamon.start()
+        logging = patch('imi.bin.imi.logging.basicConfig')
+        self.addCleanup(logging.stop)
+        logging.start()
 
     def test_main_start_daemon(self):
         sys.argv = shlex.split('imi start --detach')
@@ -28,11 +31,11 @@ class TestMainServer(unittest.TestCase):
         expected = call(self.pidfile).start().call_list()
         self.assertEqual(expected, self.deamon.mock_calls)
 
-    def test_main_start(self):
+    @patch('imi.bin.imi.run_server')
+    def test_main_start(self, run_server):
         sys.argv = shlex.split('imi start')
         imi.main()
-        expected = call(self.pidfile).run().call_list()
-        self.assertEqual(expected, self.deamon.mock_calls)
+        run_server.assert_called_once_with()
 
     def test_main_stop(self):
         sys.argv = shlex.split('imi stop')
