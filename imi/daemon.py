@@ -1,5 +1,6 @@
 """Generic linux daemon base class for python 3.x."""
 
+import abc
 import sys
 import os
 import time
@@ -7,7 +8,7 @@ import signal
 import pathlib
 
 
-class Daemon:
+class Daemon(metaclass=abc.ABCMeta):
     """A generic daemon class.
 
     Usage: subclass the Daemon class and override the run() method."""
@@ -108,6 +109,7 @@ class Daemon:
         self.stop()
         self.start()
 
+    @abc.abstractmethod
     def run(self):
         """You should override this method when you subclass Daemon.
 

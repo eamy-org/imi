@@ -9,6 +9,11 @@ from imi.daemon import Daemon
 __all__ = ['TestDaemon']
 
 
+class TestDaemonImpl(Daemon):
+    def run():
+        pass  # Do nothing
+
+
 class TestDaemon(unittest.TestCase):
 
     def setUp(self):
@@ -16,7 +21,7 @@ class TestDaemon(unittest.TestCase):
         pathlib_mock = patch('imi.daemon.pathlib')
         self.addCleanup(pathlib_mock.stop)
         self.pathlib = pathlib_mock.start()
-        self.daemon = Daemon(self.pidfile)
+        self.daemon = TestDaemonImpl(self.pidfile)
 
     def test_init(self):
         self.pathlib.Path.assert_called_once_with(self.pidfile)
