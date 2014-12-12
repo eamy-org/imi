@@ -14,11 +14,67 @@ class Daemon(metaclass=abc.ABCMeta):
     Usage: subclass the Daemon class and override the run() method."""
 
     def __init__(self, pidfile):
-        self.pidfile = pathlib.Path(pidfile)
+        self._pidfile = pathlib.Path(pidfile)
 
-    def daemonize(self):
-        """Deamonize class. UNIX double fork mechanism."""
+    def start(self):
+        """Start the daemon."""
 
+        # Check for a pidfile to see if the daemon already runs
+        try:
+            with self._pidfile.open('r') as stream:
+                pid = int(stream.read().strip())
+        except FileNotFoundError:
+            pid = None
+
+        if pid:
+            message = 'PID file {} already exists. Is daemon already running?'
+            print(message.format(self._pidfile), file=sys.stderr)
+            sys.exit(1)
+
+        # Start the daemon
+        self._daemonize()
+        self.run()
+
+    def stop(self):
+        """Stop the daemon."""
+
+        # Get the pid from the pidfile
+        try:
+            with self._pidfile.open('r') as stream:
+                pid = int(stream.read().strip())
+        except FileNotFoundError:
+            pid = None
+
+        # If pidfile doesn't exists than just return from method
+        if not pid:
+            message = "PID file {} does not exist. Isn't daemon running?"
+            print(message.format(self._pidfile), file=sys.stderr)
+            return  # not an error in a restart
+
+        # Try killing the daemon process
+        try:
+            while True:
+                os.kill(pid, signal.SIGTERM)
+                time.sleep(0.1)
+        except ProcessLookupError:
+            pass
+
+    def restart(self):
+        """Restart the daemon."""
+        self.stop()
+        self.start()
+
+    @abc.abstractmethod
+    def run(self):
+        """You should override this method when you subclass Daemon.
+
+        It will be called after the process has been daemonized by
+        start() or restart()."""
+
+    def _daemonize(self):
+
+        # Deamonize class. UNIX double fork mechanism.
+        # Do first fork
         try:
             pid = os.fork()
             if pid > 0:  # exit first parent
@@ -52,66 +108,12 @@ class Daemon(metaclass=abc.ABCMeta):
         os.dup2(so.fileno(), sys.stdout.fileno())
         os.dup2(se.fileno(), sys.stderr.fileno())
 
+        # Delete pidfile in SIGTERM
         def delpid(signum, frame):
-            self.pidfile.unlink()
+            self._pidfile.unlink()
         assert signal.signal(signal.SIGTERM, delpid) == signal.SIG_DFL
 
         # Write pidfile
         pid = str(os.getpid())
-        with self.pidfile.open('w+') as stream:  # TODO: maybe set mode to x+?
+        with self._pidfile.open('w+') as stream:  # TODO: maybe set mode to x+?
             print(pid, file=stream)
-
-    def start(self):
-        """Start the daemon."""
-
-        # Check for a pidfile to see if the daemon already runs
-        try:
-            with self.pidfile.open('r') as stream:
-                pid = int(stream.read().strip())
-        except FileNotFoundError:
-            pid = None
-
-        if pid:
-            message = 'PID file {} already exists. Is daemon already running?'
-            print(message.format(self.pidfile), file=sys.stderr)
-            sys.exit(1)
-
-        # Start the daemon
-        self.daemonize()
-        self.run()
-
-    def stop(self):
-        """Stop the daemon."""
-
-        # Get the pid from the pidfile
-        try:
-            with self.pidfile.open('r') as stream:
-                pid = int(stream.read().strip())
-        except FileNotFoundError:
-            pid = None
-
-        # If pidfile doesn't exists than just return from method
-        if not pid:
-            message = "PID file {} does not exist. Isn't daemon running?"
-            print(message.format(self.pidfile), file=sys.stderr)
-            return  # not an error in a restart
-
-        # Try killing the daemon process
-        try:
-            while True:
-                os.kill(pid, signal.SIGTERM)
-                time.sleep(0.1)
-        except ProcessLookupError:
-            pass
-
-    def restart(self):
-        """Restart the daemon."""
-        self.stop()
-        self.start()
-
-    @abc.abstractmethod
-    def run(self):
-        """You should override this method when you subclass Daemon.
-
-        It will be called after the process has been daemonized by
-        start() or restart()."""

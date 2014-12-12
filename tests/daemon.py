@@ -34,7 +34,7 @@ class TestDaemon(unittest.TestCase):
         os.getpid.return_value = pid
         write_pid = call.Path('self.pidfile').open('w+').__enter__() \
             .write(str(pid)).call_list()[-1]
-        self.daemon.daemonize()
+        self.daemon._daemonize()
         self.assertEqual(2, os.fork.call_count)
         self.assertIn(write_pid, self.pathlib.mock_calls)
         self.assertFalse(sys.exit.called)
@@ -45,7 +45,7 @@ class TestDaemon(unittest.TestCase):
         os.fork.side_effect = [12345, 0]
         sys.exit.side_effect = [SystemExit]
         with self.assertRaises(SystemExit):
-            self.daemon.daemonize()
+            self.daemon._daemonize()
         sys.exit.assert_called_once_with(0)
 
     @patch('imi.daemon.os')
@@ -54,7 +54,7 @@ class TestDaemon(unittest.TestCase):
         os.fork.side_effect = [0, 12345]
         sys.exit.side_effect = [SystemExit]
         with self.assertRaises(SystemExit):
-            self.daemon.daemonize()
+            self.daemon._daemonize()
         sys.exit.assert_called_once_with(0)
 
     @patch('imi.daemon.os')
@@ -63,7 +63,7 @@ class TestDaemon(unittest.TestCase):
         os.fork.side_effect = [OSError, 0]
         sys.exit.side_effect = [SystemExit]
         with self.assertRaises(SystemExit):
-            self.daemon.daemonize()
+            self.daemon._daemonize()
         sys.exit.assert_called_once_with(1)
 
     @patch('imi.daemon.os')
@@ -72,7 +72,7 @@ class TestDaemon(unittest.TestCase):
         os.fork.side_effect = [0, OSError]
         sys.exit.side_effect = [SystemExit]
         with self.assertRaises(SystemExit):
-            self.daemon.daemonize()
+            self.daemon._daemonize()
         sys.exit.assert_called_once_with(1)
 
     @patch('imi.daemon.os')
@@ -82,7 +82,7 @@ class TestDaemon(unittest.TestCase):
         os.fork.side_effect = [0, 0]
         sig.SIG_DFL = signal.SIG_DFL
         sig.signal.return_value = signal.SIG_DFL
-        self.daemon.daemonize()
+        self.daemon._daemonize()
         handler = sig.signal.call_args[0][1]
         handler(None, None)
         pidfile = self.pathlib.Path.return_value
@@ -91,10 +91,10 @@ class TestDaemon(unittest.TestCase):
     def test_start(self):
         open_pid = self.pathlib.Path.return_value.open
         open_pid.side_effect = [FileNotFoundError]
-        self.daemon.daemonize = Mock()
+        self.daemon._daemonize = Mock()
         self.daemon.run = Mock()
         self.daemon.start()
-        self.daemon.daemonize.assert_called_once_with()
+        self.daemon._daemonize.assert_called_once_with()
         self.daemon.run.assert_called_once_with()
 
     @patch('imi.daemon.sys')
