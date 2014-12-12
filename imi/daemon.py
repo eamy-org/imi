@@ -34,6 +34,7 @@ class Daemon(metaclass=abc.ABCMeta):
         # Start the daemon
         self._daemonize()
         self.run()
+        self.stop()
 
     def stop(self):
         """Stop the daemon."""

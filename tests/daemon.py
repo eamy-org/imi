@@ -93,9 +93,11 @@ class TestDaemon(unittest.TestCase):
         open_pid.side_effect = [FileNotFoundError]
         self.daemon._daemonize = Mock()
         self.daemon.run = Mock()
+        self.daemon.stop = Mock()
         self.daemon.start()
         self.daemon._daemonize.assert_called_once_with()
         self.daemon.run.assert_called_once_with()
+        self.daemon.stop.assert_called_once_with()
 
     @patch('imi.daemon.sys')
     def test_start_pidfile_exists(self, sys):
