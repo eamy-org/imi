@@ -25,10 +25,16 @@ def load_rule_docs():
 
 def load_context_docs():
     contexts = []
-    for path in ctx_db_path().glob('*.json'):
+
+    def loadctx(path):
         with path.open(encoding='utf-8') as stream:
             ctx = json.load(stream)
             contexts.append(ctx)
+    ctxdir = ctx_db_path()
+    for path in ctxdir.glob('*.json'):
+        loadctx(path)
+    for path in ctxdir.joinpath('complete').glob('*.json'):
+        loadctx(path)
     return contexts
 
 
@@ -95,6 +101,10 @@ def is_active_ctx(ctx):
     return any(node.state == NodeState.current for node in ctx.nodes)
 
 
+def is_complete_ctx(ctx):
+    return not is_active_ctx(ctx)
+
+
 def random_id():
     return ''.join(random.choice(IDABC) for _ in range(8))
 
@@ -104,8 +114,14 @@ def get_fname(ctx):
 
 
 def ensure_ctx_dir():
+    ctx = Path(config.DATADIR).joinpath('context')
+    comp = ctx.joinpath('complete')
     try:
-        Path(config.DATADIR).joinpath('context').mkdir()
+        ctx.mkdir()
+    except FileExistsError:
+        pass
+    try:
+        comp.mkdir()
     except FileExistsError:
         pass
 
@@ -117,6 +133,8 @@ def ctx_db_path():
 def save_new_ctx(ctx):
     tries_count = 0
     ctxpath = ctx_db_path()
+    if is_complete_ctx(ctx):
+        ctxpath = ctxpath.joinpath('complete')
     while tries_count < 10:
         ctx = ctx._replace(id=random_id())
         try:
@@ -130,7 +148,12 @@ def save_new_ctx(ctx):
 
 
 def save_ctx(ctx):
-    with ctx_db_path().joinpath(get_fname(ctx)).open('w') as stream:
+    path = ctx_db_path()
+    filename = get_fname(ctx)
+    if is_complete_ctx(ctx):
+        path.joinpath(filename).unlink()
+        path = path.joinpath('complete')
+    with path.joinpath(filename).open('w') as stream:
         json.dump(context_to_dict(ctx), stream, indent='  ')
 
 

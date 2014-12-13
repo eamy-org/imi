@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
+import io
+import json
 from copy import deepcopy
 
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from imi.context import (Context, Rule, Node, ContextError,
                          NodeResult, NodeState, ContextAgent)
@@ -51,6 +53,14 @@ class TestContextAgent(unittest.TestCase):
         self.database.find_by_idx.side_effect = find
         self.database.save.side_effect = save
         self.msg = {'a': 'b', 'c': 'd'}
+
+        urlopen = patch('imi.context.urlopen')
+        self.addCleanup(urlopen.stop)
+        urlopen = urlopen.start()
+
+        def make_response(req):
+            return io.BytesIO(req.data)
+        urlopen.side_effect = make_response
 
     def test_context_init(self):
         self.agent.apply_message(self.msg)

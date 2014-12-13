@@ -4,6 +4,7 @@ from pathlib import Path
 from .storage import Database
 from .context import ContextAgent, ContextError
 from .config import DATADIR
+from . import handlers
 
 __all__ = ['init_app']
 
@@ -15,6 +16,7 @@ def setup_routing(bottle_app, app):
 
 
 def init_app():
+    handlers.register()
     bottle_app = Bottle(catchall=False)
     app = WebApp()
     setup_routing(bottle_app, app)

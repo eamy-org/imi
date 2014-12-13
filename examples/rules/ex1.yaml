@@ -7,11 +7,11 @@ index:
     - name
     - physician
 nodes:
-    - url: command://register
+    - url: noop://register?scheduled_at=tuesday
       exit: { scheduled_at: { $exists: yes }}
-    - url: command://notify
+    - url: noop://notify?notified_at=monday
       exit: { notified_at: { $exists: 1 }}
-    - url: command://survey
+    - url: noop://survey?completed_at=tuesday
       exit: { completed_at: { $exists: yes }}
 ---
 name: example-2
@@ -22,6 +22,6 @@ criteria:
 index:
     - from
 nodes:
-    - url: command://sayhello
+    - url: noop://sayhello
       exit:
         answer: hello

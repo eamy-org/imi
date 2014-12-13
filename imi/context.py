@@ -1,6 +1,8 @@
+import json
 from collections import namedtuple
 from copy import deepcopy
 from enum import Enum
+from urllib.request import Request, urlopen
 from .query import match
 from .index import extract as extract_index
 
@@ -70,7 +72,13 @@ def invoke_context(message, ctx):
 
 
 def invoke_service(url, payload):
-    return payload
+    headers = {'Content-Type': 'application/json'}
+    data = json.dumps(payload).encode('utf-8')
+    request = Request(url, data=data, method='POST', headers=headers)
+    response = urlopen(request)
+    data = response.read().decode('utf-8')
+    response.close()
+    return json.loads(data)
 
 
 def next_step(response, current, chain):
@@ -80,8 +88,8 @@ def next_step(response, current, chain):
         next_node = next(chain, None)
         if next_node:
             next_node.state = NodeState.current
-            return True
-    return False
+            return True, current.result.message
+    return False, current.result.message
 
 
 class ContextAgent:
@@ -95,13 +103,9 @@ class ContextAgent:
         while go_next:
             rule, idx = self.find_metadata(message)
             ctx = self.get_context(message, rule, idx)
-            go_next = invoke_context(message, ctx)
+            go_next, message = invoke_context(message, ctx)
             self.database.save(ctx)
-        try:
-            active_node, _ = skip_to_current(ctx.nodes)
-        except StopIteration:
-            active_node = ctx.nodes[-1]
-        return active_node.result.message
+        return message
 
     def find_metadata(self, message):
         rule = self.find_rule(message)

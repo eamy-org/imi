@@ -30,14 +30,22 @@ class TestDBFiles(unittest.TestCase):
 
     @patch('imi.storage.Path')
     def test_load_context_docs(self, path):
+
+        def get_content(num):
+            def opencont(*args, **kwargs):
+                return io.StringIO('{{"name": {}}}'.format(num))
+            return opencont
         file1 = Mock()
         file2 = Mock()
-        file1.open.return_value = io.StringIO('{"name": 1}')
-        file2.open.return_value = io.StringIO('{"name": 2}')
-        globs = path.return_value.joinpath.return_value.glob
-        globs.return_value = [file1, file2]
+        file1.open.side_effect = get_content(1)
+        file2.open.side_effect = get_content(2)
+        ctxpath = path.return_value.joinpath.return_value
+        ctxglob = ctxpath.glob
+        ctxglob.return_value = [file1, file2]
+        compglob = ctxpath.joinpath.return_value.glob
+        compglob.return_value = [file1, file2]
         results = imi.storage.load_context_docs()
-        expected = [{'name': 1}, {'name': 2}]
+        expected = [{'name': 1}, {'name': 2}, {'name': 1}, {'name': 2}]
         self.assertEqual(expected, results)
 
     @patch('imi.storage.Path')
@@ -46,6 +54,22 @@ class TestDBFiles(unittest.TestCase):
         imi.storage.ctx_db_path()
         expected = call('test').joinpath('context').call_list()
         self.assertEqual(expected, path.mock_calls)
+
+    @patch('imi.storage.Path')
+    def test_ensure_ctx_dir(self, path):
+        imi.storage.ensure_ctx_dir()
+        ctxdir = path.return_value.joinpath.return_value
+        comdir = ctxdir.joinpath.return_value
+        ctxdir.mkdir.assert_called_once_with()
+        comdir.mkdir.assert_called_once_with()
+
+    @patch('imi.storage.Path')
+    def test_ensure_ctx_dir_exists(self, path):
+        ctxdir = path.return_value.joinpath.return_value
+        comdir = ctxdir.joinpath.return_value
+        ctxdir.mkdir.side_effect = FileExistsError
+        comdir.mkdir.side_effect = FileExistsError
+        imi.storage.ensure_ctx_dir()
 
     def tearDown(self):
         pass
@@ -77,6 +101,17 @@ class TestDatabase(unittest.TestCase):
                     {
                         'url': 'http://example.com/3',
                         'exit': {'g': 'h'}
+                    }
+                ]
+            },
+            {
+                'name': 'rule-one-step',
+                'criteria': {'a': {'$exists': True}},
+                'index': ['a'],
+                'nodes': [
+                    {
+                        'url': 'http://example.com/1',
+                        'exit': {'c': 'd'}
                     }
                 ]
             }
@@ -148,7 +183,9 @@ class TestDatabase(unittest.TestCase):
         ctx_db_path = patch('imi.storage.ctx_db_path')
         self.addCleanup(ctx_db_path.stop)
         ctx_db_path = ctx_db_path.start()
-        self.open_to_save = ctx_db_path.return_value.joinpath.return_value.open
+        ctx_dir = ctx_db_path.return_value.joinpath.return_value
+        self.save_active = ctx_dir.open
+        self.save_complete = ctx_dir.joinpath.return_value.open
 
         def dump_ctx(*args, **kwargs):
             ctx_dict = args[0]
@@ -159,11 +196,15 @@ class TestDatabase(unittest.TestCase):
         dump_json = dump_json.start()
         dump_json.side_effect = dump_ctx
 
+        ensure_ctx_dir = patch('imi.storage.ensure_ctx_dir')
+        self.addCleanup(ensure_ctx_dir.stop)
+        self.ensure_ctx_dir = ensure_ctx_dir.start()
+
         self.db = imi.storage.Database()
 
     def test_rules(self):
         rules = self.db.rules()
-        self.assertEqual(1, len(rules))
+        self.assertEqual(2, len(rules))
         self.assertEqual('rule1', rules[0].name)
         self.assertEqual(3, len(rules[0].nodes))
         self.assertEqual('http://example.com/3', rules[0].nodes[2].url)
@@ -191,9 +232,15 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual('rule-new', ctx['rule_name'])
         self.assertEqual(3, len(self.db.contexts))
 
+    def test_save_new_completed(self):
+        ctx = new_ctx()
+        ctx.nodes[0].state = NodeState.passed
+        self.db.save(ctx)
+        self.save_complete.assert_called_once_with('x')
+
     def test_save_new_several_tries(self):
         ctx = new_ctx()
-        self.open_to_save.side_effect = [FileExistsError] * 3 + [io.StringIO()]
+        self.save_active.side_effect = [FileExistsError] * 3 + [io.StringIO()]
         self.db.save(ctx)
         ctx = self.contexts[-1]
         self.assertRegex(ctx['id'], '[a-z0-9]{8}')
@@ -203,7 +250,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_save_new_tries_exceeded(self):
         ctx = new_ctx()
-        self.open_to_save.side_effect = [FileExistsError] * 10
+        self.save_active.side_effect = [FileExistsError] * 10
         try:
             self.db.save(ctx)
         except imi.storage.DatabaseError as error:
@@ -218,6 +265,7 @@ class TestDatabase(unittest.TestCase):
         nodes[2].state = NodeState.passed
         self.db.save(ctx)
         self.assertEqual(0, len(self.db.active))
+        self.save_complete.assert_called_once_with('w')
 
     def test_save_new_if_index_exists(self):
         ctx = new_ctx()
