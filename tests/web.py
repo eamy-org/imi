@@ -34,16 +34,22 @@ class TestWebApp(unittest.TestCase):
     @patch('imi.web.request')
     def test_invoke(self, request):
         self.app.ctx.apply_message.return_value = sentinel.msg
-        response = app.invoke()
+        response = self.app.invoke()
         self.assertEqual(sentinel.msg, response)
         self.app.ctx.apply_message.assert_called_once_with(request.json)
 
     @patch('imi.web.request', MagicMock())
-    def test_invoke(self):
+    def test_invoke_context_error(self):
         err = imi.context.ContextError('test error')
-        self.app.ctx.apply_message.side_effect = [err]
+        self.app.ctx.apply_message.side_effect = err
         response = self.app.invoke()
         self.assertEqual("'test error'", response['error'])
+
+    @patch('imi.web.request', MagicMock())
+    def test_invoke_value_error(self):
+        self.app.ctx.apply_message.side_effect = ValueError('test error')
+        response = self.app.invoke()
+        self.assertEqual('test error', response['error'])
 
     def tearDown(self):
         pass

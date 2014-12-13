@@ -50,4 +50,6 @@ class WebApp:
             res = self.ctx.apply_message(request.json)
         except ContextError as err:
             res = {'error': str(err)}
+        except ValueError as err:
+            res = {'error': str(err)}
         return res

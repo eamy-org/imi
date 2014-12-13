@@ -37,16 +37,17 @@ def log_config(detached_mode=False):
     root = logging.getLogger()
     for handler in root.handlers:
         root.removeHandler(handler)
+    fmt = '%(message)s'
     if detached_mode:
         # Log to file
-        logging.basicConfig(filename=LOGFILE, level=logging.INFO)
+        logging.basicConfig(filename=LOGFILE, level=logging.INFO, format=fmt)
         logging.captureWarnings(True)
         sys.excepthook = handle_exception
         sys.stdout = LogWritter(root, logging.INFO)
         sys.stderr = LogWritter(root, logging.INFO)
     else:
         # Log to stdout
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.INFO, format=fmt)
 
 
 class ServerCli:
