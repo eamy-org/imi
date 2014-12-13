@@ -3,6 +3,7 @@ import shlex
 import sys
 import io
 import argparse
+import logging
 from urllib.error import HTTPError
 
 import unittest
@@ -136,13 +137,20 @@ class TestServerDaemon(unittest.TestCase):
     def setUp(self):
         pass
 
+    @patch('imi.bin.imi.LOGFILE', 'test.log')
+    @patch('imi.bin.imi.logging.basicConfig')
     @patch('imi.bin.imi.run_bottle')
     @patch('imi.bin.imi.init_app')
-    def test_run(self, init_app, run_bottle):
+    def test_run(self, init_app, run_bottle, log_config):
         daemon = imi.ServerDaemon('/test/path/test.pid')
         app = init_app.return_value
         daemon.run()
+        log_args = {
+            'filename': 'test.log',
+            'level': logging.INFO,
+            'format': '%(message)s'}
         run_bottle.assert_called_once_with(app, host=WEB_HOST, port=WEB_PORT)
+        log_config.assert_called_once_with(**log_args)
         self.assertIs(sys.excepthook, imi.handle_exception)
 
     def tearDown(self):
