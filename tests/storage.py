@@ -44,7 +44,7 @@ class TestDBFiles(unittest.TestCase):
     @patch('imi.storage.config.DATADIR', 'test')
     def test_ctx_db_path(self, path):
         imi.storage.ctx_db_path()
-        expected = call('test').joinpath('contexts').call_list()
+        expected = call('test').joinpath('context').call_list()
         self.assertEqual(expected, path.mock_calls)
 
     def tearDown(self):

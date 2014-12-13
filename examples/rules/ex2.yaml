@@ -1,0 +1,27 @@
+---
+name: example-1
+criteria:
+    source: { $exists: yes }
+    type: urn:type:demo:pipeline:1
+index:
+    - name
+    - physician
+nodes:
+    - url: command://register
+      exit: { scheduled_at: { $exists: yes }}
+    - url: command://notify
+      exit: { notified_at: { $exists: 1 }}
+    - url: command://survey
+      exit: { completed_at: { $exists: yes }}
+---
+name: example-2
+criteria:
+    source: { $exists: true }
+    type: urn:type:demo:pipeline:2
+    message: { $exists: true }
+index:
+    - from
+nodes:
+    - url: command://sayhello
+      exit:
+        answer: hello

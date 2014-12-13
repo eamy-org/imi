@@ -1,0 +1,7 @@
+{
+    "source": "test",
+    "type": "urn:type:demo:pipeline:1",
+    "name": "test-name",
+    "physician": "test-phys-1",
+    "scheduled_at": "sunday"
+}

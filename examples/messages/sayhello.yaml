@@ -1,0 +1,5 @@
+---
+source: urn:source:demo:pipeline:2
+type: urn:type:demo:pipeline:2
+from: Vadim
+message: Hello

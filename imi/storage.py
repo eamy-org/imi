@@ -105,13 +105,13 @@ def get_fname(ctx):
 
 def ensure_ctx_dir():
     try:
-        Path(config.DATADIR).joinpath('contexts').mkdir()
+        Path(config.DATADIR).joinpath('context').mkdir()
     except FileExistsError:
         pass
 
 
 def ctx_db_path():
-    return Path(config.DATADIR).joinpath('contexts')
+    return Path(config.DATADIR).joinpath('context')
 
 
 def save_new_ctx(ctx):
