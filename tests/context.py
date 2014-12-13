@@ -48,7 +48,7 @@ class TestContextAgent(unittest.TestCase):
         def save(data):
             self.ctx = data
 
-        self.database.find.side_effect = find
+        self.database.find_by_idx.side_effect = find
         self.database.save.side_effect = save
         self.msg = {'a': 'b', 'c': 'd'}
 

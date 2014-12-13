@@ -100,7 +100,14 @@ def random_id():
 
 
 def get_fname(ctx):
-    return 'ctx_{}_{}.json'.format(ctx.rule_name, ctx.id)
+    return 'ctx-{}-{}.json'.format(ctx.rule_name, ctx.id)
+
+
+def ensure_ctx_dir():
+    try:
+        Path(config.DATADIR).joinpath('contexts').mkdir()
+    except FileExistsError:
+        pass
 
 
 def ctx_db_path():
@@ -138,18 +145,19 @@ class DatabaseError(Exception):
 class Database:
 
     def __init__(self):
+        ensure_ctx_dir()
         ctxs = load_context_docs()
         ctxs = init_contexts(ctxs)
         self.contexts = ctxs
         self._set_active()
 
-    def find_by_idx(self, index):
-        candidates = (ctx for ctx in self.active if ctx.index == index)
+    def find_by_idx(self, rule_name, index):
+        candidates = self._get_canditates(rule_name, index)
         return next(iter(candidates), None)
 
     def save(self, ctx):
         is_new = not ctx.id
-        exists = self.find_by_idx(ctx.index)
+        exists = self.find_by_idx(ctx.rule_name, ctx.index)
         if is_new and exists:
             raise DatabaseError('Context already exists')
         if not is_new and not exists:
@@ -171,3 +179,11 @@ class Database:
         for ctx in self.contexts:
             if is_active_ctx(ctx):
                 self.active.append(ctx)
+
+    def _get_canditates(self, rule_name, idx):
+        for ctx in self.active:
+            if rule_name != ctx.rule_name:
+                continue
+            if idx != ctx.index:
+                continue
+            yield ctx

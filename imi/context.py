@@ -49,13 +49,20 @@ class ContextError(Exception):
         return repr(self.msg)
 
 
-def invoke_context(message, ctx):
+def skip_to_current(nodes):
+    # Node with state NodeState.current must be present,
+    # that is context should be in active state
     def is_current(node):
         return node.state == NodeState.current
-    chain = iter(ctx.nodes)
+    chain = iter(nodes)
     current = next(chain)
     while not is_current(current):
         current = next(chain)
+    return current, chain
+
+
+def invoke_context(message, ctx):
+    current, chain = skip_to_current(ctx.nodes)
     current.calls_count += 1
     response = invoke_service(current.url, message)
     current.result.message = response
@@ -90,6 +97,11 @@ class ContextAgent:
             ctx = self.get_context(message, rule, idx)
             go_next = invoke_context(message, ctx)
             self.database.save(ctx)
+        try:
+            active_node, _ = skip_to_current(ctx.nodes)
+        except StopIteration:
+            active_node = ctx.nodes[-1]
+        return active_node.result.message
 
     def find_metadata(self, message):
         rule = self.find_rule(message)
@@ -104,7 +116,7 @@ class ContextAgent:
             raise ContextError('Cannot find rule for message')
 
     def get_context(self, message, rule, idx):
-        ctx = self.database.find(rule.name, idx)
+        ctx = self.database.find_by_idx(rule.name, idx)
         if not ctx:
             ctx = self.init_context(rule, idx)
         return ctx

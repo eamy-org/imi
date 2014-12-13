@@ -3,7 +3,7 @@ import shlex
 import sys
 
 import unittest
-from unittest.mock import patch, call
+from unittest.mock import patch, call, sentinel, Mock
 
 from imi.bin import imi
 from imi.config import WEB_HOST, WEB_PORT
@@ -49,6 +49,16 @@ class TestMainServer(unittest.TestCase):
         expected = call(self.pidfile).restart().call_list()
         self.assertEqual(expected, self.deamon.mock_calls)
 
+    @patch('imi.bin.imi.logging.getLogger')
+    def test_main_exception(self, log):
+        try:
+            raise NotImplementedError
+        except NotImplementedError:
+            err = sys.exc_info()
+            imi.handle_exception(*err)
+        msg = 'Unhandled error occurred'
+        log.return_value.error.assert_called_once_with(msg, exc_info=err)
+
     def tearDown(self):
         pass
 
@@ -78,6 +88,34 @@ class TestServerDaemon(unittest.TestCase):
         app = init_app.return_value
         daemon.run()
         run_bottle.assert_called_once_with(app, host=WEB_HOST, port=WEB_PORT)
+        self.assertIs(sys.excepthook, imi.handle_exception)
+
+    def tearDown(self):
+        pass
+
+
+class TestLogWritter(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def test__init__(self):
+        writer = imi.LogWritter(sentinel.log, sentinel.level)
+        self.assertEqual(sentinel.log, writer.log)
+        self.assertEqual(sentinel.level, writer.level)
+
+    def test_write(self):
+        log = Mock()
+        exp = Mock()
+        writer = imi.LogWritter(log, sentinel.level)
+        writer.write('Hello')
+        writer.write('Hello\n\n')
+        writer.write('\n\n')
+        writer.write(None)
+        exp.log(sentinel.level, 'Hello')
+        exp.log(sentinel.level, 'Hello')
+        exp.log(sentinel.level, 'None')
+        self.assertEqual(exp.mock_calls, log.mock_calls)
 
     def tearDown(self):
         pass

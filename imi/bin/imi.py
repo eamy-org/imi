@@ -1,5 +1,7 @@
+import sys
 import argparse
 import logging
+import io
 from bottle import run as run_bottle
 from ..daemon import Daemon
 from ..web import init_app
@@ -18,15 +20,32 @@ def run_server():
     run_bottle(init_app(), host=WEB_HOST, port=WEB_PORT)
 
 
-def log_config(detached_mode=False):
+class LogWritter(io.TextIOBase):
 
+    def __init__(self, log, level):
+        self.log = log
+        self.level = level
+
+    def write(self, message):
+        message = str(message).rstrip()
+        if message:
+            self.log.log(self.level, message)
+
+
+def log_config(detached_mode=False):
     # Clear previuos logging configuration
     root = logging.getLogger()
     for handler in root.handlers:
         root.removeHandler(handler)
-    if detached_mode:  # Log to file
+    if detached_mode:
+        # Log to file
         logging.basicConfig(filename=LOGFILE, level=logging.INFO)
-    else:  # Log to stdout
+        logging.captureWarnings(True)
+        sys.excepthook = handle_exception
+        sys.stdout = LogWritter(root, logging.INFO)
+        sys.stderr = LogWritter(root, logging.INFO)
+    else:
+        # Log to stdout
         logging.basicConfig(level=logging.INFO)
 
 
@@ -45,6 +64,12 @@ class ServerCli:
 
     def restart(self):
         self.daemon.restart()
+
+
+def handle_exception(type, value, traceback):
+    logging.getLogger().error(
+        'Unhandled error occurred',
+        exc_info=((type, value, traceback)))
 
 
 def main():

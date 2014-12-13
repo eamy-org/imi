@@ -170,12 +170,17 @@ class TestDatabase(unittest.TestCase):
 
     def test_find_by_idx_found(self):
         idx = {('a', 'b')}
-        ctx = self.db.find_by_idx(idx)
+        ctx = self.db.find_by_idx('rule1', idx)
         self.assertIsNotNone(ctx)
 
-    def test_find_by_idx_not_found(self):
+    def test_find_by_idx_idx_not_found(self):
         idx = {('a', 'z')}
-        ctx = self.db.find_by_idx(idx)
+        ctx = self.db.find_by_idx('rule1', idx)
+        self.assertIsNone(ctx)
+
+    def test_find_by_idx_rule_not_found(self):
+        idx = {('a', 'b')}
+        ctx = self.db.find_by_idx('no_rule', idx)
         self.assertIsNone(ctx)
 
     def test_save_new(self):
@@ -217,6 +222,7 @@ class TestDatabase(unittest.TestCase):
     def test_save_new_if_index_exists(self):
         ctx = new_ctx()
         ctx = ctx._replace(index={('a', 'b')})
+        ctx = ctx._replace(rule_name='rule1')
         try:
             self.db.save(ctx)
         except imi.storage.DatabaseError as error:
