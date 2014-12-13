@@ -50,3 +50,8 @@ tests/bin/*/*.py[cod]
 
 # OS Files
 .DS_Store
+
+# App specific
+/examples/context
+/examples/*.log
+/examples/*.pid
