@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import shlex
 import sys
+import io
+import argparse
+from urllib.error import HTTPError
 
 import unittest
 from unittest.mock import patch, call, sentinel, Mock
@@ -49,7 +52,7 @@ class TestMainServer(unittest.TestCase):
         expected = call(self.pidfile).restart().call_list()
         self.assertEqual(expected, self.deamon.mock_calls)
 
-    @patch('imi.bin.imi.logging.getLogger')
+    @patch('imi.bin.imi.log')
     def test_main_exception(self, log):
         try:
             raise NotImplementedError
@@ -57,7 +60,7 @@ class TestMainServer(unittest.TestCase):
             err = sys.exc_info()
             imi.handle_exception(*err)
         msg = 'Unhandled error occurred'
-        log.return_value.error.assert_called_once_with(msg, exc_info=err)
+        log.error.assert_called_once_with(msg, exc_info=err)
 
     def tearDown(self):
         pass
@@ -66,11 +69,63 @@ class TestMainServer(unittest.TestCase):
 class TestMainMessage(unittest.TestCase):
 
     def setUp(self):
-        pass
+        parser = patch('imi.bin.imi.argparse.ArgumentParser')
+        self.addCleanup(parser.stop)
+        self.parser = parser.start()
+        args = argparse.Namespace(
+            command='send',
+            message=io.StringIO('test: val'))
+        self.parser.return_value.parse_args.return_value = args
 
-    def test_main_send(self):
-        sys.argv = shlex.split('imi send')
-        imi.main()
+    @patch('imi.bin.imi.invoke')
+    def test_main_send(self, invoke):
+        invoke.return_value = {'res': 'ok'}
+        with patch('sys.stdout', io.StringIO()):
+            imi.main()
+            out = '{\n  "res": "ok"\n}\n'
+            self.assertEqual(out, sys.stdout.getvalue())
+        invoke.assert_called_once_with({'test': 'val'})
+
+    @patch('imi.bin.imi.invoke')
+    def test_main_send_http_error(self, invoke):
+        msg = io.BytesIO(b'{"test": "val"}')
+        invoke.side_effect = HTTPError(None, None, None, None, msg)
+        with patch('sys.stdout', io.StringIO()):
+            try:
+                with self.assertRaises(SystemExit):
+                    imi.main()
+            finally:
+                out = '{\n  "test": "val"\n}\n'
+                self.assertEqual(out, sys.stdout.getvalue())
+
+    @patch('imi.bin.imi.invoke')
+    def test_main_send_http_value_error(self, invoke):
+        msg = io.BytesIO(b'not json')
+        invoke.side_effect = HTTPError('', 400, 'test', {}, msg)
+        with patch('sys.stdout', io.StringIO()):
+            try:
+                with self.assertRaises(SystemExit):
+                    imi.main()
+            finally:
+                out = '{\n  "error": "HTTP Error 400: test"\n}\n'
+                self.assertEqual(out, sys.stdout.getvalue())
+
+    @patch('imi.bin.imi.invoke')
+    def test_main_send_error(self, invoke):
+        invoke.side_effect = Exception('test error')
+        with patch('sys.stdout', io.StringIO()):
+            try:
+                with self.assertRaises(SystemExit):
+                    imi.main()
+            finally:
+                out = '{\n  "error": "test error"\n}\n'
+                self.assertEqual(out, sys.stdout.getvalue())
+
+    @patch('imi.bin.imi.urlopen')
+    def test_main_send_invoke(self, urlopen):
+        urlopen.return_value = io.BytesIO(b'{"test": "result"}')
+        res = imi.invoke({'test': 'message'})
+        self.assertEqual({'test': 'result'}, res)
 
     def tearDown(self):
         pass

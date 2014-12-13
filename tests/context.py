@@ -89,7 +89,7 @@ class TestContextAgent(unittest.TestCase):
         try:
             self.agent.apply_message(self.msg)
         except ContextError as err:
-            self.assertEqual("'Cannot find rule for message'", str(err))
+            self.assertEqual('Cannot find a rule for the message', str(err))
             return
         self.fail('ContextError not raised')
 

@@ -46,7 +46,7 @@ class ContextError(Exception):
         self.msg = msg
 
     def __str__(self):
-        return repr(self.msg)
+        return self.msg
 
 
 def skip_to_current(nodes):
@@ -113,7 +113,7 @@ class ContextAgent:
             if match(message, rule.criteria):
                 return rule
         else:
-            raise ContextError('Cannot find rule for message')
+            raise ContextError('Cannot find a rule for the message')
 
     def get_context(self, message, rule, idx):
         ctx = self.database.find_by_idx(rule.name, idx)

@@ -2,12 +2,18 @@ import sys
 import argparse
 import logging
 import io
+import yaml
+import json
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 from bottle import run as run_bottle
 from ..daemon import Daemon
 from ..web import init_app
 from ..config import WEB_HOST, WEB_PORT, PIDFILE, LOGFILE
 
 __all__ = ['main']
+
+log = logging.getLogger(__name__)
 
 
 class ServerDaemon(Daemon):
@@ -67,10 +73,38 @@ class ServerCli:
         self.daemon.restart()
 
 
+def invoke(msg):
+    headers = {'Content-Type': 'application/json'}
+    url = 'http://{}:{}/invoke'.format(WEB_HOST, WEB_PORT)
+    data = json.dumps(msg).encode('utf-8')
+    request = Request(url, data=data, method='POST', headers=headers)
+    response = urlopen(request).read().decode('utf-8')
+    return json.loads(response)
+
+
+class MessageCli:
+
+    def send(self, stream):
+        try:
+            msg = yaml.load(stream)
+            stream.close()
+            res = json.dumps(invoke(msg), indent='  ')
+            print(res)
+        except HTTPError as err:
+            try:
+                res = json.loads(err.read().decode('utf-8'))
+            except ValueError:
+                res = {'error': str(err)}
+            print(json.dumps(res, indent='  '))
+            sys.exit(1)
+        except Exception as err:
+            res = {'error': str(err)}
+            print(json.dumps(res, indent='  '))
+            sys.exit(1)
+
+
 def handle_exception(type, value, traceback):
-    logging.getLogger().error(
-        'Unhandled error occurred',
-        exc_info=((type, value, traceback)))
+    log.error('Unhandled error occurred', exc_info=(type, value, traceback))
 
 
 def main():
@@ -81,6 +115,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('command', choices=commands)
     parser.add_argument('--detach', action='store_true')
+    parser.add_argument('-m', '--message', type=argparse.FileType('r'))
     ns = parser.parse_args()
     if ns.command in server_cmd:
         server = ServerCli()
@@ -90,5 +125,7 @@ def main():
             server.stop()
         elif ns.command == 'restart':
             server.restart()
-    else:
-        pass
+    elif ns.command in message_cmd:
+        msgcli = MessageCli()
+        if ns.command == 'send':
+            msgcli.send(ns.message)

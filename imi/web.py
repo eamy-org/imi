@@ -1,4 +1,3 @@
-import json
 import logging
 from bottle import Bottle, request, response
 from pathlib import Path
@@ -46,10 +45,14 @@ class WebApp:
     def invoke(self):
         force_json()
         log.info('Received a message')
+
+        def handle_error(err):
+            response.status = 400
+            return {'error': str(err)}
         try:
             res = self.ctx.apply_message(request.json)
         except ContextError as err:
-            res = {'error': str(err)}
+            res = handle_error(err)
         except ValueError as err:
-            res = {'error': str(err)}
+            res = handle_error(err)
         return res

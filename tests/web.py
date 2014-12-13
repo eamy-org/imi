@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
 import unittest
-from unittest.mock import patch, call, sentinel, MagicMock
+from unittest.mock import patch, sentinel, MagicMock
 
 import imi.web
 import imi.context
-
 
 __all__ = ['TestWebApp']
 
@@ -43,7 +42,7 @@ class TestWebApp(unittest.TestCase):
         err = imi.context.ContextError('test error')
         self.app.ctx.apply_message.side_effect = err
         response = self.app.invoke()
-        self.assertEqual("'test error'", response['error'])
+        self.assertEqual('test error', response['error'])
 
     @patch('imi.web.request', MagicMock())
     def test_invoke_value_error(self):

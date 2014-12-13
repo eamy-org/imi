@@ -207,7 +207,7 @@ class TestDatabase(unittest.TestCase):
         try:
             self.db.save(ctx)
         except imi.storage.DatabaseError as error:
-            self.assertEqual("'Unable to save context'", str(error))
+            self.assertEqual('Unable to save the context', str(error))
             return
         self.fail('DatabaseError not raised')
 
@@ -226,7 +226,7 @@ class TestDatabase(unittest.TestCase):
         try:
             self.db.save(ctx)
         except imi.storage.DatabaseError as error:
-            self.assertEqual("'Context already exists'", str(error))
+            self.assertEqual('The context already exists', str(error))
             return
         self.fail('DatabaseError not raised')
 
@@ -236,7 +236,7 @@ class TestDatabase(unittest.TestCase):
         try:
             self.db.save(ctx)
         except imi.storage.DatabaseError as error:
-            self.assertEqual("'Untracked context #abc'", str(error))
+            self.assertEqual('Untracked context #abc', str(error))
             return
         self.fail('DatabaseError not raised')
 

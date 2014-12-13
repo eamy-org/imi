@@ -126,7 +126,7 @@ def save_new_ctx(ctx):
             tries_count += 1
             continue
         return ctx
-    raise DatabaseError('Unable to save context')
+    raise DatabaseError('Unable to save the context')
 
 
 def save_ctx(ctx):
@@ -139,7 +139,7 @@ class DatabaseError(Exception):
         self.msg = msg
 
     def __str__(self):
-        return repr(self.msg)
+        return self.msg
 
 
 class Database:
@@ -159,9 +159,9 @@ class Database:
         is_new = not ctx.id
         exists = self.find_by_idx(ctx.rule_name, ctx.index)
         if is_new and exists:
-            raise DatabaseError('Context already exists')
+            raise DatabaseError('The context already exists')
         if not is_new and not exists:
-            raise DatabaseError('Untracked context #' + ctx.id)
+            raise DatabaseError('Untracked context #{}'.format(ctx.id))
         if is_new:
             ctx = save_new_ctx(ctx)
             self.contexts.append(ctx)
