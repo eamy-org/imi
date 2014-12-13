@@ -2,7 +2,6 @@
 
 import json
 import unittest
-from unittest.mock import patch, sentinel, Mock
 from urllib.request import Request
 
 import imi.handlers

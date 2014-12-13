@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import io
-import json
 from copy import deepcopy
 
 import unittest
