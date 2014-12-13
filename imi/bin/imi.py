@@ -78,8 +78,10 @@ def invoke(msg):
     url = 'http://{}:{}/invoke'.format(WEB_HOST, WEB_PORT)
     data = json.dumps(msg).encode('utf-8')
     request = Request(url, data=data, method='POST', headers=headers)
-    response = urlopen(request).read().decode('utf-8')
-    return json.loads(response)
+    response = urlopen(request)
+    data = response.read().decode('utf-8')
+    response.close()
+    return json.loads(data)
 
 
 class MessageCli:
