@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+day_of_week=$(date +"%A")
+jq -c -M --arg day_of_week $day_of_week '.completed_at = $day_of_week'

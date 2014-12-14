@@ -52,6 +52,7 @@ tests/bin/*/*.py[cod]
 .DS_Store
 
 # App specific
+!/examples/bin
 /examples/context
 /examples/*.log
 /examples/*.pid
