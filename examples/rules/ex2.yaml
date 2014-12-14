@@ -17,7 +17,7 @@ nodes:
 name: example-2
 criteria:
     source: { $exists: true }
-    type: urn:type:demo:pipeline:2
+    type: urn:type:demo:pipeline:4
     message: { $exists: true }
 index:
     - from
